@@ -59,15 +59,17 @@ class SugarscapeCg(mesa.Model):
 
         # Set parameters
         self.width = width
+        self.itax_prev=0
         self.height = height
         self.initial_population = initial_population
-
+        self.itax=0
+        self.redi=pd.DataFrame()
         self.schedule = mesa.time.RandomActivationByType(self)
         self.grid = mesa.space.MultiGrid(self.width, self.height, torus=False)
         # self.datacollector = mesa.DataCollector(
         #     {"SsAgent": lambda m: m.schedule.get_type_count(SsAgent)}
         # )
-        self.datacollector = mesa.DataCollector(model_reporters=  {"SsAgent": lambda m: m.schedule.get_type_count(SsAgent),"Rich": get_num_rich_agents},agent_reporters={"Wealth": "sugar","category": "category","vision":"vision"})
+        self.datacollector = mesa.DataCollector(model_reporters=  {"SsAgent": lambda m: m.schedule.get_type_count(SsAgent),"Rich": get_num_rich_agents},agent_reporters={"Wealth": "sugar","category": "category","vision":"vision","benefits":"benefits","earn":"earn"})
         # Create sugar
         import numpy as np
         import pandas as pd
@@ -112,7 +114,7 @@ class SugarscapeCg(mesa.Model):
         # collect data
         self.datacollector.collect(self)
         if self.verbose:
-            print([self.schedule.time, self.schedule.get_type_count(SsAgent)])
+            print([self.schedule.time, self.schedule.get_type_count(SsAgent),self.itax])
     def l_plot(self):
         print("dd")
 
@@ -126,8 +128,42 @@ class SugarscapeCg(mesa.Model):
             )
 
         for i in range(step_count):
+            print("tax",self.itax_prev)
+            temp_data = self.datacollector.get_agent_vars_dataframe()
+            # temp_data=self.datacollector.get_agent_vars_dataframe()
+            # print(temp_data.columns)
+            temp_data=temp_data.loc[temp_data.index[temp_data.category=='ant']]
+            temp_data=temp_data.reset_index(level=[1])
+            temp_data=temp_data.loc[temp_data.index==i]
+            # temp_data=temp_data.loc[temp_data.index[temp_data.index==i]]
+            temp_data['Wealth_wa']=1/(temp_data['Wealth']/temp_data['Wealth'].sum())
+            temp_data['Wealth_wa']=temp_data['Wealth_wa']/temp_data['Wealth_wa'].sum()
+            print("lenghth",temp_data['Wealth_wa'].sum())
+            self.redi=temp_data
+            # print(self.redi)
+            self.redi.index=self.redi.AgentID
+            print(self.redi)
+            # self.itax=0
             self.step()
-            self.l_plot()
+            # self.redi=self.redi.reset_index(level=[1])
+            # print("dfddf",self.redi)
+            for ID in self.redi.index:
+                # print(ID,self.redi.at[ID,'category'])
+                # if (self.redi.at[ID,'category']) == 'ant':
+                #     print('sssssssssssssssssssssss')
+                #     self.schedule.agents.benefits=self.redi.at[ID,'Wealth_wa']*self.itax_prev
+                self.redi.at[ID,'benefits']=self.redi.at[ID,'Wealth_wa']*self.itax_prev
+                print(self.itax_prev)
+            print(self.redi)            
+            # temp_data = self.model.datacollector.get_agent_vars_dataframe()
+            # # temp_data=self.datacollector.get_agent_vars_dataframe()
+            # # print(temp_data.columns)
+            # temp_data=temp_data.loc[temp_data.index[temp_data.category=='ant']]
+            # temp_data['Wealth_wa']=temp_data['Wealth']/temp_data['Wealth'].sum()
+            # self.model.redi=temp_data
+            self.itax_prev=self.itax
+            self.itax=0
+            # self.l_plot()
             
             # global temp_data
             temp_data=self.datacollector.get_agent_vars_dataframe()
@@ -136,7 +172,7 @@ class SugarscapeCg(mesa.Model):
             if i==(step_count-1):
                 temp_data.to_csv("temp_data.csv")
                 temp_data=temp_data.reset_index(level=[1])
-                print(temp_data.index)
+                # print(temp_data.index)
                 # temp_data=temp_data.reset_index(level=[0,1])
                 import pandas as pd
                 # import xlrd, xlwt

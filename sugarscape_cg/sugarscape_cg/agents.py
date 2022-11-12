@@ -34,6 +34,8 @@ class SsAgent(mesa.Agent):
         self.category='ant'
         self.time=0
         self.ad_new=0
+        self.benefits=0
+        self.earn=0
         
 
     def get_sugar(self, pos):
@@ -43,13 +45,28 @@ class SsAgent(mesa.Agent):
                 return agent
 
 
-    def Check_Income_tax(self):
+    def Check_Income_tax(self,val):
         import numpy as np
         # this_cell = self.model.grid.get_cell_list_contents([pos])
         # for agent in this_cell:
         #     if type(agent) is Sugar:
         #         return agent
-        print(np.unique(self.model.sdist))
+        # income=list(np.unique(self.model.sdist))
+        income=[0,1,2,3,4]
+        index = income.index(val)
+        tax_slab=[0,0,5,10,15]
+        # print(val,tax_slab[index])
+        indn=index
+        income_tax_collected=0
+        for i in range(index):
+            # print(tax_slab[indn])
+            # print(income[indn])
+            taxable=income[indn]-income[indn-1]
+            income_tax_collected=tax_slab[indn]/100*taxable+income_tax_collected
+            # print('tax',tax_slab[indn]/100*taxable,income_tax_collected)
+            indn=indn-1
+        return income_tax_collected
+        
         
         
 
@@ -83,27 +100,52 @@ class SsAgent(mesa.Agent):
         self.model.grid.move_agent(self, final_candidates[0])
 
     def eat(self):
+        # total_income_tax=0
         sugar_patch = self.get_sugar(self.pos)
-        print(sugar_patch)
-        if sugar_patch.amount>1:
-            tm=(sugar_patch.amount-1)
-        else: tm=0
-        self.sugar = self.sugar + sugar_patch.amount- self.metabolism-self.tax*tm
+        # print(sugar_patch)
+        income_tax=self.Check_Income_tax(sugar_patch.amount)
+        # income_tax=self.Check_Income_tax(sugar_patch.amount)
         if self.time>0:
+            self.benefits=int(self.model.redi.loc[self.unique_id].benefits)
+            self.sugar = self.sugar + sugar_patch.amount- self.metabolism-income_tax-self.benefits
+        else:
+            # self.benefits=int(self.model.redi.loc[self.unique_id].benefits)
+            self.sugar = self.sugar + sugar_patch.amount- self.metabolism-income_tax-0
+        self.earn=sugar_patch.amount
+        self.model.itax=self.model.itax+income_tax
+        # if self.time>0:
             
-            # print(self.ad_new.index)
-            # print(self.ad_new.loc[self.unique_id].vision_)
-            self.vision=int(self.ad_new.loc[self.unique_id].vision_)
-        # self.ad_new.to_csv("ffffffffffffff.csv")
+        #     # print(self.ad_new.index)
+        #     # print(self.ad_new.loc[self.unique_id].vision_)
+        #     self.vision=int(self.ad_new.loc[self.unique_id].vision_)
+        # # self.ad_new.to_csv("ffffffffffffff.csv")
         sugar_patch.amount = 0
-        self.Check_Income_tax()
+        # return total_income_tax
+        
+        # self.Check_Income_tax(sugar_patch.amount)
+    def redist(self):
+        # temp_data = self.model.datacollector.get_agent_vars_dataframe()
+        # # temp_data=self.datacollector.get_agent_vars_dataframe()
+        # # print(temp_data.columns)
+        # temp_data=temp_data.loc[temp_data.index[temp_data.category=='ant']]
+        # temp_data['Wealth_wa']=temp_data['Wealth']/temp_data['Wealth'].sum()
+        # self.model.redi=temp_data
+        # print(temp_data['Wealth_wa'].sum())
+        # print("collection",self.model.itax_prev/self.model.schedule.get_type_count(SsAgent))
+        self.sugar = self.sugar 
+        # self.model.itax=self.model.itax+income_tax
+
+        # return total_income_tax
+        
+        # self.Check_Income_tax(sugar_patch.amount)
 
     def update_vision(self):
         sugar_patch = self.get_sugar(self.pos)
         self.sugar = self.sugar + sugar_patch.amount- self.metabolism-self.tax*self.sugar
+        self.earn=sugar_patch
         
-        for agnt in self.ad_new.index:
-            print(self.ad_new.loc[agnt].Wealth)
+        # for agnt in self.ad_new.index:
+        #     print(self.ad_new.loc[agnt].Wealth)
         # print(self.unique_id)
         sugar_patch.amount = 0
 
@@ -142,8 +184,8 @@ class SsAgent(mesa.Agent):
         # print(temp_data1)
         self.ad_new=temp_data1
         # A=(temp_data1['Wealth_rank']<100 & temp_data1['Wealth_rank']>80)
-        for agnt in temp_data1.index:
-            print(self.ad_new.loc[agnt].Wealth)
+        # for agnt in temp_data1.index:
+        #     print(self.ad_new.loc[agnt].Wealth)
         # temp_data1['new_vision']=0
         # temp_data1.nlargest(10, 'Wealth')['new_vision']=4
         # print("ssss",temp_data1['Wealth_rank'].max())
@@ -153,7 +195,11 @@ class SsAgent(mesa.Agent):
         # apro=pd.read_csv("temp_data111.csv",index_col=0)
         
         self.move()
+
         self.eat()
+        self.redist()
+
+        # print("it_collected",it_collected,total_income_tax)
         self.time=self.time+1
         if self.sugar <= 0:
             self.model.grid.remove_agent(self)
@@ -168,6 +214,9 @@ class Sugar(mesa.Agent):
         self.sugar=-1
         self.category='sugar'
         self.vision = "sssss"
+        self.benefits=0
+        self.earn=0
+        
 
     def step(self):
         self.amount = min([self.max_sugar, self.amount + 1])
