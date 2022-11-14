@@ -41,8 +41,9 @@ class SugarscapeCg(mesa.Model):
     from openpyxl import load_workbook
     verbose = True  # Print-monitoring
     main_data=pd.read_csv("sugarscape_cg/data.csv",index_col=0)
+    pop=main_data.loc['second'].population
     
-    def __init__(self, width=50, height=50, initial_population=main_data.loc[main_data.index[0]].population):
+    def __init__(self, width=50, height=50, initial_population=pop):
         import pandas as pd
         # import xlrd, xlwt
         # from xlutils.copy import copy as xl_copy
@@ -58,6 +59,7 @@ class SugarscapeCg(mesa.Model):
         """
 
         # Set parameters
+        self.scenario_name='second'
         self.width = width
         self.itax_prev=0
         self.height = height
@@ -77,6 +79,7 @@ class SugarscapeCg(mesa.Model):
         self.sdist=sugar_distribution
         # sugar_distribution1=pd.read_csv("sugarscape_cg/sugar_distribution.csv",index_col=0)
         # sugar_distribution1.to_numpy()
+        self.sugar_distribution = np.genfromtxt("sugarscape_cg/sugar-map.txt")
         agent_id = 0
         for _, x, y in self.grid.coord_iter():
             max_sugar = sugar_distribution[x, y]
@@ -90,7 +93,7 @@ class SugarscapeCg(mesa.Model):
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
             sugar = self.random.randrange(6, 25)
-            metabolism = self.random.randrange(2, 4)
+            metabolism = self.random.randrange(2, 6)
             vision = self.random.randrange(1, 6)
             tax=0
             ssa = SsAgent(agent_id, (x, y), self, False, sugar, metabolism, vision,tax)
@@ -119,15 +122,15 @@ class SugarscapeCg(mesa.Model):
         print("dd")
 
 
-    def run_model(self, step_count=5):
-
+    def run_model(self, step_count=0):
+        step_count=self.main_data['time_steps'].loc[self.scenario_name]
         if self.verbose:
             print(
                 "Initial number Sugarscape Agent: ",
                 self.schedule.get_type_count(SsAgent),
             )
 
-        for i in range(step_count):
+        for i in range(self.main_data['time_steps'].loc[self.scenario_name]):
             print("tax",self.itax_prev)
             temp_data = self.datacollector.get_agent_vars_dataframe()
             # temp_data=self.datacollector.get_agent_vars_dataframe()
@@ -138,23 +141,44 @@ class SugarscapeCg(mesa.Model):
             # temp_data=temp_data.loc[temp_data.index[temp_data.index==i]]
             temp_data['Wealth_wa']=1/(temp_data['Wealth']/temp_data['Wealth'].sum())
             temp_data['Wealth_wa']=temp_data['Wealth_wa']/temp_data['Wealth_wa'].sum()
-            print("lenghth",temp_data['Wealth_wa'].sum())
+            # print("lenghth",temp_data['Wealth_wa'].sum())
             self.redi=temp_data
             # print(self.redi)
             self.redi.index=self.redi.AgentID
-            print(self.redi)
-            # self.itax=0
-            self.step()
-            # self.redi=self.redi.reset_index(level=[1])
-            # print("dfddf",self.redi)
+            # print('a',self.redi)
             for ID in self.redi.index:
                 # print(ID,self.redi.at[ID,'category'])
                 # if (self.redi.at[ID,'category']) == 'ant':
                 #     print('sssssssssssssssssssssss')
                 #     self.schedule.agents.benefits=self.redi.at[ID,'Wealth_wa']*self.itax_prev
                 self.redi.at[ID,'benefits']=self.redi.at[ID,'Wealth_wa']*self.itax_prev
-                print(self.itax_prev)
-            print(self.redi)            
+                # print(ID,self.redi.at[ID,'benefits'])            
+            # self.itax=0
+            if self.schedule.get_type_count(SsAgent)<self.initial_population:
+                # print("sssssssssss")
+                for nm in range(-self.schedule.get_type_count(SsAgent)+self.initial_population):
+                    # print(nm)
+                    x = self.random.randrange(self.width)
+                    y = self.random.randrange(self.height)
+                    sugar = self.random.randrange(6, 25)
+                    metabolism = self.random.randrange(2, 6)
+                    vision = self.random.randrange(1, 6)
+                    tax=0
+                    ssa = SsAgent("birth_"+str(self.schedule.time)+str(nm), (x, y), self, False, sugar, metabolism, vision,tax)
+                    # agent_id += 1
+                    self.grid.place_agent(ssa, (x, y))
+                    self.schedule.add(ssa)
+            self.step()
+            # self.redi=self.redi.reset_index(level=[1])
+            # print("dfddf",self.redi)
+            # for ID in self.redi.index:
+            #     # print(ID,self.redi.at[ID,'category'])
+            #     # if (self.redi.at[ID,'category']) == 'ant':
+            #     #     print('sssssssssssssssssssssss')
+            #     #     self.schedule.agents.benefits=self.redi.at[ID,'Wealth_wa']*self.itax_prev
+            #     self.redi.at[ID,'benefits']=self.redi.at[ID,'Wealth_wa']*self.itax_prev
+            #     print(ID,self.redi.at[ID,'benefits'])
+            # print('b',self.redi)            
             # temp_data = self.model.datacollector.get_agent_vars_dataframe()
             # # temp_data=self.datacollector.get_agent_vars_dataframe()
             # # print(temp_data.columns)
@@ -170,9 +194,10 @@ class SugarscapeCg(mesa.Model):
             # print(temp_data.columns)
             temp_data=temp_data.loc[temp_data.index[temp_data.category=='ant']]
             if i==(step_count-1):
+                # print("ssssssssssssssssssssssssssssssssssssssss")
                 temp_data.to_csv("temp_data.csv")
                 temp_data=temp_data.reset_index(level=[1])
-                # print(temp_data.index)
+                # print(temp_data)
                 # temp_data=temp_data.reset_index(level=[0,1])
                 import pandas as pd
                 # import xlrd, xlwt
@@ -183,7 +208,7 @@ class SugarscapeCg(mesa.Model):
                 writer.book = book
                 
                 main_data=pd.read_csv("sugarscape_cg/data.csv",index_col=0)
-                temp_data.to_excel(writer, sheet_name = main_data.index[0])
+                temp_data.to_excel(writer, sheet_name = self.scenario_name)
                 # df4.to_excel(writer, sheet_name = 'x4')
                 writer.close()
                 

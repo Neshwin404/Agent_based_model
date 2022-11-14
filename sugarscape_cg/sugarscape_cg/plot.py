@@ -138,6 +138,6 @@ plt.show()
 plt.savefig('population-lorenz.png', dpi = 200)
 
 
-dts=data[data.Step==i]
-penguins = sns.load_dataset("penguins")
+dts=data[data.Step==45]
+# penguins = sns.load_dataset("penguins")
 sns.displot(dts, x="Wealth")

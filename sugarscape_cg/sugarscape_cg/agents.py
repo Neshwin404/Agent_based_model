@@ -44,7 +44,7 @@ class SsAgent(mesa.Agent):
             if type(agent) is Sugar:
                 return agent
 
-
+    
     def Check_Income_tax(self,val):
         import numpy as np
         # this_cell = self.model.grid.get_cell_list_contents([pos])
@@ -54,9 +54,19 @@ class SsAgent(mesa.Agent):
         # income=list(np.unique(self.model.sdist))
         income=[0,1,2,3,4]
         index = income.index(val)
-        tax_slab=[0,0,5,10,15]
+        # tax_slab=[0,0,5,10,15]
+        tax_slab=[]
+        for i in range(self.model.main_data['tax_slabs'].loc[self.model.scenario_name]):
+            # print(i+1)
+            # print(self.model.main_data['tax_slab_'+str(i+1)].loc['first'])
+            tax_slab.append(self.model.main_data['tax_slab_'+str(i+1)].loc[self.model.scenario_name])
         # print(val,tax_slab[index])
         indn=index
+        
+        if sum(income)!=sum(list(np.unique(self.model.sugar_distribution))):   
+            import sys
+            sys.exit()
+        
         income_tax_collected=0
         for i in range(index):
             # print(tax_slab[indn])
@@ -105,20 +115,23 @@ class SsAgent(mesa.Agent):
         # print(sugar_patch)
         income_tax=self.Check_Income_tax(sugar_patch.amount)
         # income_tax=self.Check_Income_tax(sugar_patch.amount)
+        # print("aburo",self.model.redi)
         if self.time>0:
-            self.benefits=int(self.model.redi.loc[self.unique_id].benefits)
-            self.sugar = self.sugar + sugar_patch.amount- self.metabolism-income_tax-self.benefits
+            self.benefits=(self.model.redi.loc[self.unique_id].benefits)
+            # print('JJJJJJJJJ',self.unique_id,self.model.redi)
+            self.sugar = self.sugar + sugar_patch.amount- self.metabolism-income_tax+self.benefits
         else:
             # self.benefits=int(self.model.redi.loc[self.unique_id].benefits)
             self.sugar = self.sugar + sugar_patch.amount- self.metabolism-income_tax-0
         self.earn=sugar_patch.amount
         self.model.itax=self.model.itax+income_tax
-        # if self.time>0:
-            
-        #     # print(self.ad_new.index)
-        #     # print(self.ad_new.loc[self.unique_id].vision_)
-        #     self.vision=int(self.ad_new.loc[self.unique_id].vision_)
-        # # self.ad_new.to_csv("ffffffffffffff.csv")
+        if self.model.main_data['vision_adaptation'].loc[self.model.scenario_name]=='yes':
+            if self.time>0:
+                
+                # print(self.ad_new.index)
+                # print(self.ad_new.loc[self.unique_id].vision_)
+                self.vision=int(self.ad_new.loc[self.unique_id].vision_)
+            # # self.ad_new.to_csv("ffffffffffffff.csv")
         sugar_patch.amount = 0
         # return total_income_tax
         
@@ -181,6 +194,9 @@ class SsAgent(mesa.Agent):
                 temp_data1.at[ids,'vision_']=2                   
             elif wlth <50:
                 temp_data1.at[ids,'vision_']=1               
+
+            # elif wlth <50:
+            #     temp_data1.at[ids,'vision_']=temp_data1.at[ids,'vision_']+.01
         # print(temp_data1)
         self.ad_new=temp_data1
         # A=(temp_data1['Wealth_rank']<100 & temp_data1['Wealth_rank']>80)
