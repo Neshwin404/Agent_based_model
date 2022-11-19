@@ -6,7 +6,7 @@ Created on Sun Nov 13 13:43:39 2022
 """
 import  pandas as pd
 xls = pd.ExcelFile('out_put.xlsx')
-data = pd.read_excel(xls, 'second4')
+data = pd.read_excel(xls, 'second10')
 
 def gini(x):
     total = 0

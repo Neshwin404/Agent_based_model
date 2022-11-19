@@ -41,7 +41,7 @@ class SugarscapeCg(mesa.Model):
     from openpyxl import load_workbook
     verbose = True  # Print-monitoring
     main_data=pd.read_csv("sugarscape_cg/data.csv",index_col=0)
-    pop=main_data.loc['second'].population
+    pop=main_data.loc['fourth'].population
     
     def __init__(self, width=50, height=50, initial_population=pop):
         import pandas as pd
@@ -59,7 +59,7 @@ class SugarscapeCg(mesa.Model):
         """
 
         # Set parameters
-        self.scenario_name='second'
+        self.scenario_name='fourth'
         self.width = width
         self.itax_prev=0
         self.height = height
@@ -72,6 +72,8 @@ class SugarscapeCg(mesa.Model):
         #     {"SsAgent": lambda m: m.schedule.get_type_count(SsAgent)}
         # )
         self.datacollector = mesa.DataCollector(model_reporters=  {"SsAgent": lambda m: m.schedule.get_type_count(SsAgent),"Rich": get_num_rich_agents},agent_reporters={"Wealth": "sugar","category": "category","vision":"vision","benefits":"benefits","earn":"earn"})
+        self.datacollector = mesa.DataCollector(model_reporters=  {"SsAgent": lambda m: m.schedule.get_type_count(SsAgent),"Rich": get_num_rich_agents},agent_reporters={"Wealth": "sugar","category": "category","vision":"vision","benefits":"benefits","earn":"earn"})
+
         # Create sugar
         import numpy as np
         import pandas as pd
@@ -93,10 +95,12 @@ class SugarscapeCg(mesa.Model):
             x = self.random.randrange(self.width)
             y = self.random.randrange(self.height)
             sugar = self.random.randrange(6, 25)
-            metabolism = self.random.randrange(2, 6)
+            metabolism = self.random.randrange(1, 4)
             vision = self.random.randrange(1, 6)
+            max_age=self.random.randrange(30, 70)
+            age=0
             tax=0
-            ssa = SsAgent(agent_id, (x, y), self, False, sugar, metabolism, vision,tax)
+            ssa = SsAgent(agent_id, (x, y), self, False, sugar, metabolism, vision,age,max_age,tax)
             agent_id += 1
             self.grid.place_agent(ssa, (x, y))
             self.schedule.add(ssa)
@@ -154,20 +158,26 @@ class SugarscapeCg(mesa.Model):
                 self.redi.at[ID,'benefits']=self.redi.at[ID,'Wealth_wa']*self.itax_prev
                 # print(ID,self.redi.at[ID,'benefits'])            
             # self.itax=0
-            if self.schedule.get_type_count(SsAgent)<self.initial_population:
-                # print("sssssssssss")
-                for nm in range(-self.schedule.get_type_count(SsAgent)+self.initial_population):
-                    # print(nm)
-                    x = self.random.randrange(self.width)
-                    y = self.random.randrange(self.height)
-                    sugar = self.random.randrange(6, 25)
-                    metabolism = self.random.randrange(2, 6)
-                    vision = self.random.randrange(1, 6)
-                    tax=0
-                    ssa = SsAgent("birth_"+str(self.schedule.time)+str(nm), (x, y), self, False, sugar, metabolism, vision,tax)
-                    # agent_id += 1
-                    self.grid.place_agent(ssa, (x, y))
-                    self.schedule.add(ssa)
+            if self.main_data['maintain_population'].loc[self.scenario_name]=='yes':
+                if self.schedule.get_type_count(SsAgent)<self.initial_population:
+                    # print("sssssssssss")
+                    for nm in range(-self.schedule.get_type_count(SsAgent)+self.initial_population):
+                        # print(nm)
+                        x = self.random.randrange(self.width)
+                        y = self.random.randrange(self.height)
+                        sugar = self.random.randrange(6, 25)
+                        metabolism = self.random.randrange(1, 4)
+                        vision = self.random.randrange(1, 6)
+                        max_age=self.random.randrange(30, 70)
+                        age=0
+
+                        tax=0
+                        # print("birth_"+str(self.schedule.time)+str(nm),"ssssssssssss")
+                        ssa = SsAgent("birth_"+str(self.schedule.time)+str(nm), (x, y), self, False, sugar, metabolism, vision,age,max_age,tax)
+                        # print("ssssssssssssa1","birth_"+str(self.schedule.time)+str(nm))
+                        # agent_id += 1
+                        self.grid.place_agent(ssa, (x, y))
+                        self.schedule.add(ssa)
             self.step()
             # self.redi=self.redi.reset_index(level=[1])
             # print("dfddf",self.redi)
@@ -190,10 +200,13 @@ class SugarscapeCg(mesa.Model):
             # self.l_plot()
             
             # global temp_data
-            temp_data=self.datacollector.get_agent_vars_dataframe()
-            # print(temp_data.columns)
-            temp_data=temp_data.loc[temp_data.index[temp_data.category=='ant']]
+            # temp_data=self.datacollector.get_agent_vars_dataframe()
+            # # print(temp_data.columns)
+            # temp_data=temp_data.loc[temp_data.index[temp_data.category=='ant']]
             if i==(step_count-1):
+                temp_data=self.datacollector.get_agent_vars_dataframe()
+                # print(temp_data.columns)
+                temp_data=temp_data.loc[temp_data.index[temp_data.category=='ant']]
                 # print("ssssssssssssssssssssssssssssssssssssssss")
                 temp_data.to_csv("temp_data.csv")
                 temp_data=temp_data.reset_index(level=[1])

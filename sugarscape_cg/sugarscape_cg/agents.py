@@ -19,7 +19,7 @@ def get_distance(pos_1, pos_2):
 
 class SsAgent(mesa.Agent):
     def __init__(
-        self, unique_id, pos, model, moore=False, sugar=0, metabolism=0, vision=0,age=0,max_age=10,tax=0.05
+        self, unique_id, pos, model, moore=False, sugar=0, metabolism=0, vision=0,age=0,max_age=100,tax=0.05
     ):
         super().__init__(unique_id, model)
         self.pos = pos
@@ -123,6 +123,7 @@ class SsAgent(mesa.Agent):
         else:
             # self.benefits=int(self.model.redi.loc[self.unique_id].benefits)
             self.sugar = self.sugar + sugar_patch.amount- self.metabolism-income_tax-0
+        # print(sugar_patch.amount,income_tax)
         self.earn=sugar_patch.amount
         self.model.itax=self.model.itax+income_tax
         if self.model.main_data['vision_adaptation'].loc[self.model.scenario_name]=='yes':
@@ -217,7 +218,8 @@ class SsAgent(mesa.Agent):
 
         # print("it_collected",it_collected,total_income_tax)
         self.time=self.time+1
-        if self.sugar <= 0:
+        self.age=self.age+1
+        if self.sugar <= 0 or self.age>=self.max_age:
             self.model.grid.remove_agent(self)
             self.model.schedule.remove(self)
 

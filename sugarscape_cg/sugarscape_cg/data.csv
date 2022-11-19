@@ -1,4 +1,5 @@
 Run_name,vision_adaptation,maintain_population,tax_slabs,wealth_tax_slabs,redistribution,population,time_steps,tax_slab_1,tax_slab_2,tax_slab_3,tax_slab_4,tax_slab_5,tax_slab_6,tax_slab_7,tax_slab_8,wealth_tax_1,wealth_tax_2,wealth_tax_slab_1,wealth_tax_slab_2
 first,yes,no,5,1,1,20,20,0,0,5,10,15,0,0,0,0,0,0,0
-second,no,no,5,1,1,50,50,0,0,5,10,15,0,0,0,0,0,0,0
-third,yes,no,5,1,1,20,20,0,0,5,10,15,0,0,0,0,0,0,0
+second,no,yes,5,1,1,100,50,0,0,0,0,0,0,0,0,0,0,0,0
+third,no,yes,5,1,1,100,50,0,0,5,10,15,0,0,0,0,0,0,0
+fourth,no,yes,5,1,1,100,50,0,0,0,4,5,0,0,0,0,0,0,0
